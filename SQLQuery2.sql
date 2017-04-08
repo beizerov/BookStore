@@ -178,7 +178,7 @@ CREATE TRIGGER WhenBuying
 ON Selling
 FOR INSERT
 AS
-	DECLARE @Id_book int, @quantity int
+	DECLARE @Id_book int, @quantity int;
 	SELECT @Id_book = Id_Book, @quantity = Quantity
 	FROM inserted;
 
@@ -379,7 +379,7 @@ BEGIN
 	RETURN;
 END
 
-DECLARE @QuantitySellers int 
+DECLARE @QuantitySellers int;
 SELECT @QuantitySellers = COUNT(Sellers.Id)
 FROM Sellers;
 
@@ -391,7 +391,7 @@ BEGIN
 	SET @QuantitySellers -= 1;
 END
 
-DECLARE @TempSalesAmount TABLE (id int, amount smallmoney, bonus smallmoney)
+DECLARE @TempSalesAmount TABLE (id int, amount smallmoney, bonus smallmoney);
 INSERT  @TempSalesAmount
 SELECT Sellers.Id, SUM (Books.Price) AS [Sales amount], Bonus
 FROM Selling, Books, Sellers, Salary
@@ -418,7 +418,7 @@ Update @TempSalesAmount
 SET Bonus = amount * 0.4
 WHERE amount BETWEEN 2000 AND 3000;
 
-DECLARE @Index int, @TempBonus smallmoney
+DECLARE @Index int, @TempBonus smallmoney;
 
 SELECT @Index = COUNT(Sellers.Id)
 FROM Sellers;
@@ -787,7 +787,7 @@ CREATE TRIGGER insert_new_book
 ON Books
 FOR INSERT
 AS
-DECLARE @quantity_books int
+DECLARE @quantity_books int;
 SELECT @quantity_books = SUM(Quantity)
 FROM Books;
 
@@ -836,6 +836,41 @@ GO
 -- 300-499 гривен скидка 5%
 -- 500-999 гривен скидка 7%
 -- 1000 и более скидка 10% 
+CREATE FUNCTION Discount
+(
+	@id_buyer int
+)
+RETURNS smallmoney
+AS
+BEGIN
+	DECLARE @sum smallmoney;
+	SELECT @sum = SUM (Books.Price)
+	FROM Buyers, Selling, Books
+	WHERE Selling.Id_Buyer = Buyers.Id 
+		AND 
+		Selling.Id_Book = Books.Id 
+		AND 
+		Buyers.Id = @id_buyer;
+
+	DECLARE @rebate smallmoney;
+	SET @rebate =
+		(CASE 
+			WHEN (@sum  BETWEEN 100 AND 299)  THEN  @sum * 0.02
+			WHEN (@sum  BETWEEN 300 AND 499)  THEN  @sum * 0.05
+			WHEN (@sum  BETWEEN 500 AND 999)  THEN  @sum * 0.07
+			WHEN (@sum  > 1000)  THEN  @sum * 0.1
+		END
+		)
+	RETURN @rebate;
+END
+GO
+
+SELECT dbo.Discount(1);
+GO
+
+-- 7. С помощью индексов выполнить индексирование необходимых
+-- полей в таблице «Книги». Вам необходимо самостоятельно принять
+-- решение по каким полям делать индексы.
 
 /*
 -- Watch Bonus
